@@ -1,1 +1,39 @@
 @import '~node_modules/modern-normalize/modern-normalize.css';
+
+:root {
+    --timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    --animation-duration: 250ms;
+    /* fonts */
+    --main-font: Roboto, sans-serif;
+    --secondary-font: Raleway, sans-serif;
+}
+
+body {
+    font-family: var(--main-font);
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 1.71;
+    /*24px or 171% */
+
+    letter-spacing: 0.03em;
+
+    color: var(--main-color);
+    tab-size: 0px;
+}
+
+.container {
+    width: 1200px;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+.footer {
+    padding: 20px;
+}
+
+.invisible {
+    display: none;
+}
