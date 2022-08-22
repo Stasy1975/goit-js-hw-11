@@ -1,6 +1,7 @@
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 import { Notify } from 'notiflix';
+import axios from 'axios';
 const BASE_URL = 'https://pixabay.com/api/';
 const API_KEY = '24763200-978795bf266706bc8b4393fbd';
 const PARAMETRS = 'image_type=photo&orientation=horizontal&safesearch=true';
@@ -39,22 +40,22 @@ const renderGallery = ({ galleryArr, totalHits }) => {
   const markupGallery = galleryArr
     .map(img => {
       return `
-  <div class="photo-card">
+  <div class="card">
        <a href="${img.largeImageURL}">
-        <img class="gallery__image" src="${img.webformatURL}" alt="${img.tags}" loading="lazy" />
+        <img class="card__image" src="${img.webformatURL}" alt="${img.tags}" loading="lazy" />
         </a>
-      <div class="info">
-            <p class="info-item">
-                <b>Likes<br>${img.likes}</b>
+      <div class="card__info">
+            <p class="card__info__item">
+                <b>Сподобалось:${img.likes}</b>
             </p>
-            <p class="info-item">
-            <b>Views<br>${img.views}</b>
+            <p class="card__info__item">
+            <b>Переглянуто:${img.views}</b>
             </p>
-            <p class="info-item">
-            <b>Comments<br>${img.comments}</b>
+            <p class="card__info__item">
+            <b>Коментарі:${img.comments}</b>
             </p>
-            <p class="info-item">
-            <b>Downloads<br>${img.downloads}</b>
+            <p class="card__info__item">
+            <b>Завантажено:${img.downloads}</b>
             </p>
       </div>
   </div>
@@ -62,10 +63,89 @@ const renderGallery = ({ galleryArr, totalHits }) => {
     })
     .join('');
 
-  const isLastRender =
-    totalHits - currentPage * per_page < totalHits % per_page;
+  const isLastList = totalHits - page * per_page < totalHits % per_page;
 
-  currentPage += 1;
+  page += 1;
 
-  return { isLastRender, markupGallery };
+  return { isLastList, markupGallery };
 };
+
+const addGallery = ({ isLastList, markupGallery }) => {
+  refs.galleryEl.insertAdjacentHTML('beforeend', markupGallery);
+  if (!isLastList) {
+    onLoadMore();
+  } else {
+    onNoMore();
+  }
+
+  const { height: cardHeight } = document
+    .querySelector('.gallery')
+    .firstElementChild.getBoundingClientRect();
+
+  window.scrollBy({
+    top: cardHeight * 11,
+    behavior: 'smooth',
+  });
+};
+
+const createLightBox = () => {
+  lightbox = new SimpleLightbox('.gallery a', {
+    captionsData: 'alt',
+    captionPosition: 'bottom',
+    captionDelay: 250,
+  });
+};
+
+const showGaleryPage = ({ galleryArr, totalHits }) => {
+  const { isLastList, markupGallery } = renderGallery({
+    galleryArr,
+    totalHits,
+  });
+  addGallery({ isLastList, markupGallery });
+};
+
+const getPics = async url => {
+  const response = await axios.get(url);
+  const hitsArr = await response.data.hits;
+
+  if (hitsArr.length === 0) {
+    return Promise.reject(
+      'Sorry, there are no images matching your search query. Please try again.'
+    );
+  } else {
+    return {
+      galleryArr: hitsArr,
+      totalHits: response.data.totalHits,
+    };
+  }
+};
+const showErrors = error => Notify.failure(error);
+
+const startSearch = async event => {
+  event.preventDefault();
+  page = 1;
+  offLoadMore();
+  offNoMore();
+
+  refs.galleryEl.innerHTML = '';
+  nameImg = refs.inputEl.value;
+  refs.inputEl.value = '';
+  getUrl();
+
+  await getPics(url).then(showGaleryPage).catch(showErrors);
+
+  createLightBox();
+  lightbox.on('');
+};
+
+const loadMore = async () => {
+  offLoadMore();
+  getUrl();
+
+  await getPics(url).then(showGaleryPage).catch(showErrors);
+
+  lightbox.refresh();
+};
+
+refs.btnSearchEl.addEventListener('click', startSearch);
+refs.btnMoreEl.addEventListener('click', loadMore);
